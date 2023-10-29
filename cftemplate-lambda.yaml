@@ -1,0 +1,43 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Create a Lambda function from a ZIP file in S3 with an appropriate role
+
+Parameters:
+  LambdaFunctionName:
+    Type: String
+    Default: zaxbys-franchise-lambda
+    Description: Name for the Lambda function
+
+  S3BucketName: zaxbys-franchise-lambda
+    Type: String
+    Description: Name of the S3 bucket containing the Lambda deployment package
+
+  S3ObjectKey:
+    Type: String
+    Description: Key of the ZIP file in the S3 bucket
+
+Resources:
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${LambdaFunctionName}-Role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole  # Basic Lambda execution permissions
+
+  LambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Ref LambdaFunctionName
+      Handler: index.handler  # Modify this if your handler is in a different file
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        S3Bucket: !Ref S3BucketName
+        S3Key: !Ref S3ObjectKey
+      Runtime: nodejs14.x  # Modify this to match your runtime
+
