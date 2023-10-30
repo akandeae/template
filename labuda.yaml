@@ -1,0 +1,61 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation Template for Lambda Function Deployment
+
+Resources:
+  MyLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Handler: handler  # Replace with your Lambda function handler (e.g., filename.handler)
+      Role: !GetAtt MyLambdaExecutionRole.Arn
+      FunctionName: MyLambdaFunction
+      Code:
+        S3Bucket: kristiandion  # Replace with your S3 bucket containing your Lambda deployment package
+        S3Key: index.zip  # Replace with the key of your deployment package in the S3 bucket
+      Runtime: nodejs14.x  # Replace with the runtime that matches your Lambda function
+      Timeout: 35  # Replace with your preferred timeout value
+
+  MyLambdaExecutionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: LambdaExecutionRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17' 
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: LambdaPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'logs:CreateLogGroup'
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+                Resource: 'arn:aws:logs:*:*:*'
+              - Effect: Allow
+                Action:
+                  - 's3:GetObject'
+                  - 's3:PutObject'
+                Resource:
+                  - 'arn:aws:s3:::kristiandion/*'  # Replace with your S3 bucket ARN
+              # Add any additional permissions your Lambda function requires
+
+  MyS3BucketInvokePermission:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt MyLambdaFunction.Arn
+      Principal: s3.amazonaws.com
+      SourceAccount: !Ref 'AWS::AccountId'
+      SourceArn: 'arn:aws:s3:::kristiandion'  # Replace with your S3 bucket ARN
+      # Adjust the SourceArn if using a different event source
+
+Outputs:
+  LambdaFunctionArn:
+    Description: ARN of the Lambda function
+    Value: !GetAtt MyLambdaFunction.Arn
